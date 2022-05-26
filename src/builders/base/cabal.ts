@@ -1,6 +1,4 @@
 import { CtorOpts, BuilderBase } from './index'
-import { delimiter } from 'path'
-import child_process = require('child_process')
 
 export abstract class CabalBase extends BuilderBase {
   constructor(opts: CtorOpts, globals: object = {}) {

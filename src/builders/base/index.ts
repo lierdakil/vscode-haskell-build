@@ -1,6 +1,6 @@
 import { delimiter } from 'path'
 
-import { CabalCommand, TargetParamTypeForBuilder } from '../../ide-backend'
+import { CabalCommand, TargetParamTypeForBuilder } from '../../types'
 import * as vscode from 'vscode'
 
 import { runProcess, IParams } from './process'

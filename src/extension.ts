@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
-import { IdeBackend } from './ide-backend';
+import { init } from './ide-backend';
 
-export function activate(context: vscode.ExtensionContext) {
-	new IdeBackend(context)
+export function activate(context: vscode.ExtensionContext): void {
+	init(context)
 }
 
 // this method is called when your extension is deactivated
-export function deactivate() {}
+export function deactivate(): void {}

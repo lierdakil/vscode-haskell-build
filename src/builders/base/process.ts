@@ -180,7 +180,6 @@ export async function runProcess(
   options: child_process.SpawnOptions,
   pars: IParams,
 ) {
-  let interval = undefined
   return await new Promise<{ exitCode: number | null; hasError: boolean }>(
     (resolve) => {
       const newPars: IParamsInternal = { ...pars, onDone: resolve }
