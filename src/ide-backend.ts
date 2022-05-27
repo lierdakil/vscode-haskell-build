@@ -248,13 +248,12 @@ async function runBuilderCommand(
     command: CabalCommand
   ): Promise<void> {
 
-  const messages: Map<vscode.Uri, vscode.Diagnostic[]> = new Map()
+  const messages: Map<string, vscode.Diagnostic[]> = new Map()
   output.clear()
-  output.show(true)
   diagnostics.clear()
 
   await vscode.window.withProgress({
-    location: vscode.ProgressLocation.Notification,
+    location: vscode.ProgressLocation.Window,
     cancellable: true,
     title: `${command} in progress` }, async (progress, token) => {
       await cabalBuild(ed, context, command, {
@@ -264,11 +263,14 @@ async function runBuilderCommand(
         onMsg: (raw:string, uri?: vscode.Uri, diagnostic?: vscode.Diagnostic) => {
           output.append(raw+"\n")
           if (uri && diagnostic) {
-            if (!messages.has(uri)) {
-              messages.set(uri,[])
+            const str = uri.toString()
+            let ds = messages.get(str)
+            if (ds === undefined) {
+              ds = []
+              messages.set(str, ds)
             }
-            messages.get(uri)?.push(diagnostic)
-            diagnostics.set(uri, messages.get(uri))
+            ds.push(diagnostic)
+            diagnostics.set(uri, ds)
           }
         },
         onProgress: (message: string) => progress.report({message}),
