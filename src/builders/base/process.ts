@@ -42,19 +42,25 @@ function parseMessage(
       const icol =  parseInt(col, 10) - 1
 
       const lines = msg.split('\n')
+      const codeLines = []
+
       for(const line of lines.slice().reverse()) {
         if(line.match(/^[\s\d]+\|/)) {
-          lines.pop()
+          codeLines.unshift(lines.pop())
         } else {
           break
         }
       }
 
+      const code = codeLines.join('\n')
+      const carets = code.match(/\^+/)
+      const length = carets ? carets[0].length : 1
+
       return [
         path.isAbsolute(file) ? vscode.Uri.file(file) : vscode.Uri.joinPath(cwd, file),
         {
           source: context ? `Haskell Build: ${context}` : 'Haskell Build',
-          range: new vscode.Range(iline, icol, iline, icol+1),
+          range: new vscode.Range(iline, icol, iline, icol+length),
           message: unindentMessage(lines),
           severity: typ,
         },
