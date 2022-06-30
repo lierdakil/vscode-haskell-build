@@ -1,7 +1,13 @@
 {
   "name": "haskell-build",
 	"displayName": "haskell-build",
-	"description": "",
+	"description": "Run cabal or stack from vscode, with proper(-ish) error reporting",
+	"preview": true,
+	"extensionKind": ["workspace"],
+	"repository": {
+	  "type": "git",
+	  "url": "https://github.com/lierdakil/haskell-build"
+	},
 	"version": "0.0.1",
 	"engines": {
 		"vscode": "^1.67.0"
