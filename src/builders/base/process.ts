@@ -7,9 +7,16 @@ import * as vscode from 'vscode'
 export type IParams = Omit<IParamsInternal, 'onDone'>
 
 interface IParamsInternal {
-  readonly onMsg?: (raw: string, path?: vscode.Uri, msg?: vscode.Diagnostic) => void
+  readonly onMsg?: (
+    raw: string,
+    path?: vscode.Uri,
+    msg?: vscode.Diagnostic,
+  ) => void
   readonly onProgress?: (progress: string) => void
-  readonly onDone?: (done: { exitCode: number | null; hasError: boolean }) => void
+  readonly onDone?: (done: {
+    exitCode: number | null
+    hasError: boolean
+  }) => void
   readonly setCancelAction?: (action: () => void) => void
 }
 
@@ -32,20 +39,24 @@ function parseMessage(
   cwd: vscode.Uri,
 ): [vscode.Uri, vscode.Diagnostic] | false {
   if (raw.trim() !== '') {
-    const matchLoc = /^(.+):(\d+):(\d+):(?: (\w+):)?[ \t]*(\[[^\]]+\])?[ \t]*\n?([^]*)/
+    const matchLoc =
+      /^(.+):(\d+):(\d+):(?: (\w+):)?[ \t]*(\[[^\]]+\])?[ \t]*\n?([^]*)/
     const matched = raw.trimRight().match(matchLoc)
     if (matched) {
       const [file, line, col, rawTyp, context, msg] = matched.slice(1)
-      const typ = rawTyp === 'Warning' ? vscode.DiagnosticSeverity.Warning : vscode.DiagnosticSeverity.Error
+      const typ =
+        rawTyp.toLowerCase() === 'warning'
+          ? vscode.DiagnosticSeverity.Warning
+          : vscode.DiagnosticSeverity.Error
 
       const iline = parseInt(line, 10) - 1
-      const icol =  parseInt(col, 10) - 1
+      const icol = parseInt(col, 10) - 1
 
       const lines = msg.split('\n')
       const codeLines = []
 
-      for(const line of lines.slice().reverse()) {
-        if(line.match(/^[\s\d]+\|/)) {
+      for (const line of lines.slice().reverse()) {
+        if (line.match(/^[\s\d]+\|/)) {
           codeLines.unshift(lines.pop())
         } else {
           break
@@ -57,10 +68,12 @@ function parseMessage(
       const length = carets ? carets[0].length : 1
 
       return [
-        path.isAbsolute(file) ? vscode.Uri.file(file) : vscode.Uri.joinPath(cwd, file),
+        path.isAbsolute(file)
+          ? vscode.Uri.file(file)
+          : vscode.Uri.joinPath(cwd, file),
         {
           source: context ? `Haskell Build: ${context}` : 'Haskell Build',
-          range: new vscode.Range(iline, icol, iline, icol+length),
+          range: new vscode.Range(iline, icol, iline, icol + length),
           message: unindentMessage(lines),
           severity: typ,
         },
@@ -86,7 +99,7 @@ function runBuilderProcess(
   // this.hasError is set if we find an error/warning, see parseMessage
   let hasError = false
   const proc = child_process.spawn(command, args, options)
-  proc.on('error', function(err) {
+  proc.on('error', function (err) {
     vscode.window.showErrorMessage(err.name, {
       detail: err.message,
     })

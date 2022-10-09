@@ -1,12 +1,14 @@
 {
-  "name": "haskell-build",
+	"name": "haskell-build",
 	"displayName": "haskell-build",
 	"description": "Run cabal or stack from vscode, with proper(-ish) error reporting",
 	"preview": true,
-	"extensionKind": ["workspace"],
+	"extensionKind": [
+		"workspace"
+	],
 	"repository": {
-	  "type": "git",
-	  "url": "https://github.com/lierdakil/haskell-build"
+		"type": "git",
+		"url": "https://github.com/lierdakil/vscode-haskell-build"
 	},
 	"publisher": "lierdakil",
 	"version": "0.0.1",
@@ -22,12 +24,30 @@
 	"main": "./out/extension.js",
 	"contributes": {
 		"commands": [
-			{ "command": "haskell-build.build", "title": "Haskell Build: Build"},
-			{ "command": "haskell-build.test", "title": "Haskell Build: Test"},
-			{ "command": "haskell-build.clean", "title": "Haskell Build: Clean"},
-			{ "command": "haskell-build.bench", "title": "Haskell Build: Bench"},
-			{ "command": "haskell-build.set-build-target", "title": "Haskell Build: Set build target"},
-			{ "command": "haskell-build.set-builder", "title": "Haskell Build: Set builder"}
+			{
+				"command": "haskell-build.build",
+				"title": "Haskell Build: Build"
+			},
+			{
+				"command": "haskell-build.test",
+				"title": "Haskell Build: Test"
+			},
+			{
+				"command": "haskell-build.clean",
+				"title": "Haskell Build: Clean"
+			},
+			{
+				"command": "haskell-build.bench",
+				"title": "Haskell Build: Bench"
+			},
+			{
+				"command": "haskell-build.set-build-target",
+				"title": "Haskell Build: Set build target"
+			},
+			{
+				"command": "haskell-build.set-builder",
+				"title": "Haskell Build: Set builder"
+			}
 		]
 	},
 	"scripts": {
@@ -50,5 +70,11 @@
 		"mocha": "^9.2.2",
 		"typescript": "^4.6.4",
 		"@vscode/test-electron": "^2.1.3"
+	},
+	"__metadata": {
+		"id": "c9735bfb-e3bb-439e-8d67-09aafe4a0e5a",
+		"publisherDisplayName": "lierdakil",
+		"publisherId": "70a25767-eb44-4939-9052-6aaf21f6c7b5",
+		"isPreReleaseVersion": false
 	}
 }
