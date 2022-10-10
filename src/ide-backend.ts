@@ -276,4 +276,7 @@ async function runBuilderCommand(
         onProgress: (message: string) => progress.report({message}),
       }, progress)
     })
+  for (const [fn, ds] of messages.entries()) {
+    diagnostics.set(vscode.Uri.file(fn), ds);
+  }
 }
