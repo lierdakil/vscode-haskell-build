@@ -10,7 +10,9 @@ export class Builder extends BuilderBase {
     return this.runCommon([
       'build',
       ...this.component(),
-      ...(vscode.workspace.getConfiguration().get<string[]>('haskell-build.stack.arguments.build') || []),
+      ...(vscode.workspace
+        .getConfiguration()
+        .get<string[]>('haskell-build.stack.arguments.build') || []),
       '--no-run-tests',
       '--no-run-benchmarks',
     ])
@@ -19,21 +21,27 @@ export class Builder extends BuilderBase {
     return this.runBuild([
       'test',
       ...this.project(),
-      ...(vscode.workspace.getConfiguration().get<string[]>('haskell-build.stack.arguments.test') || []),
+      ...(vscode.workspace
+        .getConfiguration()
+        .get<string[]>('haskell-build.stack.arguments.test') || []),
     ])
   }
   public async bench() {
     return this.runBuild([
       'bench',
       ...this.project(),
-      ...(vscode.workspace.getConfiguration().get<string[]>('haskell-build.stack.arguments.bench') || []),
+      ...(vscode.workspace
+        .getConfiguration()
+        .get<string[]>('haskell-build.stack.arguments.bench') || []),
     ])
   }
   public async clean() {
     return this.runCommon([
       'clean',
       ...this.project(),
-      ...(vscode.workspace.getConfiguration().get<string[]>('haskell-build.stack.arguments.clean') || []),
+      ...(vscode.workspace
+        .getConfiguration()
+        .get<string[]>('haskell-build.stack.arguments.clean') || []),
     ])
   }
   public async deps() {
@@ -41,13 +49,17 @@ export class Builder extends BuilderBase {
       'build',
       '--only-dependencies',
       ...this.component(),
-      ...(vscode.workspace.getConfiguration().get<string[]>('haskell-build.stack.arguments.deps') || []),
+      ...(vscode.workspace
+        .getConfiguration()
+        .get<string[]>('haskell-build.stack.arguments.deps') || []),
     ])
   }
 
   private async runCommon(args: string[], overrides: {} = {}) {
     const globalArgs =
-      vscode.workspace.getConfiguration().get<string[]>('haskell-build.stack.arguments.global') || []
+      vscode.workspace
+        .getConfiguration()
+        .get<string[]>('haskell-build.stack.arguments.global') || []
     return this.runCabal([...globalArgs, ...args], overrides)
   }
 

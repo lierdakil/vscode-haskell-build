@@ -32,16 +32,13 @@ export class Builder extends CabalBase {
     args: string[],
     override: Partial<IParams> = {},
   ) {
-    if ((await vscode.workspace.fs.readDirectory(this.opts.cabalRoot))
-      .find(([f, t]) => f === 'package.yaml' && t === vscode.FileType.File)) {
+    if (
+      (await vscode.workspace.fs.readDirectory(this.opts.cabalRoot)).find(
+        ([f, t]) => f === 'package.yaml' && t === vscode.FileType.File,
+      )
+    ) {
       await runProcess('hpack', [], this.getSpawnOpts(), this.opts.params)
     }
-    return this.runCabal(
-      [
-        await this.withPrefix(command),
-        ...args,
-      ],
-      override,
-    )
+    return this.runCabal([await this.withPrefix(command), ...args], override)
   }
 }

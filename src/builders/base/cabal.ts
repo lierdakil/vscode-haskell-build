@@ -16,10 +16,7 @@ export abstract class CabalBase extends BuilderBase {
     }
   }
 
-  protected async withPrefix(
-    cmd: string,
-    newprefix: string,
-  ) {
+  protected async withPrefix(cmd: string, newprefix: string) {
     return `${newprefix}${cmd}`
   }
 }

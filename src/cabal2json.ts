@@ -16,7 +16,11 @@ export interface ITarget {
   target: string
 }
 
-async function runCabal2Json<T>(cabalSource: Uint8Array, args: string[], def: T) {
+async function runCabal2Json<T>(
+  cabalSource: Uint8Array,
+  args: string[],
+  def: T,
+) {
   return await new Promise<T>((resolve) => {
     const cp = CP.execFile(
       'node',

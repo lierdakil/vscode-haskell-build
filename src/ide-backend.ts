@@ -1,10 +1,16 @@
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as Builders from './builders'
-import {posix as nodePath} from 'path'
-import {CabalCommand, TargetParamType, BuilderParamType, TBuilders, TargetParamTypeForBuilder} from './types'
-import {getRootDir} from './util'
-import {parseDotCabal, getComponentFromFile} from './cabal2json'
+import { posix as nodePath } from 'path'
+import {
+  CabalCommand,
+  TargetParamType,
+  BuilderParamType,
+  TBuilders,
+  TargetParamTypeForBuilder,
+} from './types'
+import { getRootDir } from './util'
+import { parseDotCabal, getComponentFromFile } from './cabal2json'
 
 const defaultTarget: Readonly<TargetParamType> = {
   project: 'Auto',
@@ -18,50 +24,63 @@ export function init(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     diagnostics,
     output,
-    vscode.commands.registerTextEditorCommand(`haskell-build.build`,
-      (ed) => runBuilderCommand(ed, output, diagnostics, context, 'build')),
-    vscode.commands.registerTextEditorCommand(`haskell-build.test`,
-      (ed) => runBuilderCommand(ed, output, diagnostics, context, 'test')),
-    vscode.commands.registerTextEditorCommand(`haskell-build.clean`,
-      (ed) => runBuilderCommand(ed, output, diagnostics, context, 'clean')),
-    vscode.commands.registerTextEditorCommand(`haskell-build.bench`,
-      (ed) => runBuilderCommand(ed, output, diagnostics, context, 'bench')),
-    vscode.commands.registerCommand(`haskell-build.set-build-target`, async () => {
-      const targets = await targetParamInfo()
-      const target = await vscode.window.showQuickPick(targets)
-      context.workspaceState.update('target', target?.handle)
-    }),
+    vscode.commands.registerTextEditorCommand(`haskell-build.build`, (ed) =>
+      runBuilderCommand(ed, output, diagnostics, context, 'build'),
+    ),
+    vscode.commands.registerTextEditorCommand(`haskell-build.test`, (ed) =>
+      runBuilderCommand(ed, output, diagnostics, context, 'test'),
+    ),
+    vscode.commands.registerTextEditorCommand(`haskell-build.clean`, (ed) =>
+      runBuilderCommand(ed, output, diagnostics, context, 'clean'),
+    ),
+    vscode.commands.registerTextEditorCommand(`haskell-build.bench`, (ed) =>
+      runBuilderCommand(ed, output, diagnostics, context, 'bench'),
+    ),
+    vscode.commands.registerCommand(
+      `haskell-build.set-build-target`,
+      async () => {
+        const targets = await targetParamInfo()
+        const target = await vscode.window.showQuickPick(targets)
+        context.workspaceState.update('target', target?.handle)
+      },
+    ),
     vscode.commands.registerCommand(`haskell-build.set-builder`, async () => {
       await selectBuilder(context)
     }),
   )
 }
 
-const builderParamInfo: ReadonlyArray<vscode.QuickPickItem> =
-  [
-    { label: 'cabal-v2' },
-    { label: 'stack' },
-    { label: 'none' },
-  ]
+const builderParamInfo: ReadonlyArray<vscode.QuickPickItem> = [
+  { label: 'cabal-v2' },
+  { label: 'stack' },
+  { label: 'none' },
+]
 
 async function selectBuilder(context: vscode.ExtensionContext) {
   const target = await vscode.window.showQuickPick(builderParamInfo)
-  if(target) {
+  if (target) {
     context.workspaceState.update('builder', target?.label)
   }
   return target?.label as BuilderParamType
 }
 
-async function targetParamInfo(): Promise<Array<vscode.QuickPickItem & {handle: TargetParamType}>> {
+async function targetParamInfo(): Promise<
+  Array<vscode.QuickPickItem & { handle: TargetParamType }>
+> {
   const projects: TargetParamType[] = [defaultTarget]
   for (const d of vscode.workspace.workspaceFolders || []) {
     const dir = d.uri
     const rootDir = await getRootDir(dir)
-    if (!rootDir) { continue }
-    const cabalFile = (await vscode.workspace.fs.readDirectory(rootDir))
-      .find(f => f[1] === vscode.FileType.File && f[0].endsWith('.cabal'))
+    if (!rootDir) {
+      continue
+    }
+    const cabalFile = (await vscode.workspace.fs.readDirectory(rootDir)).find(
+      (f) => f[1] === vscode.FileType.File && f[0].endsWith('.cabal'),
+    )
     if (cabalFile) {
-      const data = await vscode.workspace.fs.readFile(vscode.Uri.joinPath(rootDir, cabalFile[0]))
+      const data = await vscode.workspace.fs.readFile(
+        vscode.Uri.joinPath(rootDir, cabalFile[0]),
+      )
       const project = await parseDotCabal(data)
       if (project) {
         projects.push({ project: project.name, dir, type: 'auto' })
@@ -78,7 +97,7 @@ async function targetParamInfo(): Promise<Array<vscode.QuickPickItem & {handle: 
       }
     }
   }
-  return projects.map(t => ({
+  return projects.map((t) => ({
     label: `${t.project}: ${t.type === 'component' ? t.target.name : t.type}`,
     detail: t.dir?.fsPath,
     description: t.type === 'component' ? t.component : undefined,
@@ -89,10 +108,13 @@ async function targetParamInfo(): Promise<Array<vscode.QuickPickItem & {handle: 
 function getActiveProjectPath(editor: vscode.TextEditor): vscode.Uri {
   const uri = editor.document.uri
   if (uri) {
-    return uri.with({path: nodePath.dirname(uri.path)})
+    return uri.with({ path: nodePath.dirname(uri.path) })
   }
-  return (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders[0]?.uri) ||
+  return (
+    (vscode.workspace.workspaceFolders &&
+      vscode.workspace.workspaceFolders[0]?.uri) ||
     vscode.Uri.file(process.cwd())
+  )
 }
 
 async function getActiveProjectTarget(
@@ -104,9 +126,11 @@ async function getActiveProjectTarget(
   if (uri) {
     const res = await getComponentFromFile(
       cabalfile,
-      nodePath.relative(cabalRoot.path,uri.path),
+      nodePath.relative(cabalRoot.path, uri.path),
     )
-    if (res) { return res }
+    if (res) {
+      return res
+    }
   }
   return []
 }
@@ -116,10 +140,11 @@ async function cabalBuild(
   context: vscode.ExtensionContext,
   cmd: CabalCommand,
   params: Builders.IParams,
-  progress: vscode.Progress<{message?: string, increment?: number}>,
+  progress: vscode.Progress<{ message?: string; increment?: number }>,
 ): Promise<void> {
   try {
-    let builderParam: BuilderParamType | undefined = context.workspaceState.get('builder')
+    let builderParam: BuilderParamType | undefined =
+      context.workspaceState.get('builder')
     let target = context.workspaceState.get<TargetParamType>('target')
 
     if (target === undefined) {
@@ -140,8 +165,9 @@ async function cabalBuild(
       throw new Error('No cabal root dir found')
     }
 
-    const cabalFileName = (await vscode.workspace.fs.readDirectory(cabalRoot))
-      .find(f => f[1] === vscode.FileType.File && f[0].endsWith('.cabal'))
+    const cabalFileName = (
+      await vscode.workspace.fs.readDirectory(cabalRoot)
+    ).find((f) => f[1] === vscode.FileType.File && f[0].endsWith('.cabal'))
 
     if (!cabalFileName) {
       throw new Error('No cabal file found')
@@ -202,9 +228,7 @@ async function cabalBuild(
     const builder = builders[builderParam]
 
     if (builder === undefined) {
-      throw new Error(
-        `Unknown builder '${builderParam}'`,
-      )
+      throw new Error(`Unknown builder '${builderParam}'`)
     }
 
     const res = await new builder({
@@ -217,21 +241,21 @@ async function cabalBuild(
     if (res.exitCode === null) {
       // this means process was killed
       progress.report({
-        message: 'Build was interrupted'
+        message: 'Build was interrupted',
       })
     } else if (res.exitCode !== 0) {
       if (res.hasError) {
         progress.report({
-          message: 'There were errors in source files'
+          message: 'There were errors in source files',
         })
       } else {
         progress.report({
-          message: `Builder quit abnormally with exit code ${res.exitCode}`
+          message: `Builder quit abnormally with exit code ${res.exitCode}`,
         })
       }
     } else {
       progress.report({
-        message: 'Build was successful'
+        message: 'Build was successful',
       })
     }
   } catch (error) {
@@ -241,42 +265,55 @@ async function cabalBuild(
 }
 
 async function runBuilderCommand(
-    ed: vscode.TextEditor,
-    output: vscode.OutputChannel,
-    diagnostics: vscode.DiagnosticCollection,
-    context: vscode.ExtensionContext,
-    command: CabalCommand
-  ): Promise<void> {
-
+  ed: vscode.TextEditor,
+  output: vscode.OutputChannel,
+  diagnostics: vscode.DiagnosticCollection,
+  context: vscode.ExtensionContext,
+  command: CabalCommand,
+): Promise<void> {
   const messages: Map<string, vscode.Diagnostic[]> = new Map()
   output.clear()
   diagnostics.clear()
 
-  await vscode.window.withProgress({
-    location: vscode.ProgressLocation.Window,
-    cancellable: true,
-    title: `${command} in progress` }, async (progress, token) => {
-      await cabalBuild(ed, context, command, {
-        setCancelAction: (action: () => void) => {
-          token.onCancellationRequested(action)
-        },
-        onMsg: (raw:string, uri?: vscode.Uri, diagnostic?: vscode.Diagnostic) => {
-          output.append(raw+"\n")
-          if (uri && diagnostic) {
-            const str = uri.toString()
-            let ds = messages.get(str)
-            if (ds === undefined) {
-              ds = []
-              messages.set(str, ds)
+  await vscode.window.withProgress(
+    {
+      location: vscode.ProgressLocation.Window,
+      cancellable: true,
+      title: `${command} in progress`,
+    },
+    async (progress, token) => {
+      await cabalBuild(
+        ed,
+        context,
+        command,
+        {
+          setCancelAction: (action: () => void) => {
+            token.onCancellationRequested(action)
+          },
+          onMsg: (
+            raw: string,
+            uri?: vscode.Uri,
+            diagnostic?: vscode.Diagnostic,
+          ) => {
+            output.append(raw + '\n')
+            if (uri && diagnostic) {
+              const str = uri.toString()
+              let ds = messages.get(str)
+              if (ds === undefined) {
+                ds = []
+                messages.set(str, ds)
+              }
+              ds.push(diagnostic)
+              diagnostics.set(uri, ds)
             }
-            ds.push(diagnostic)
-            diagnostics.set(uri, ds)
-          }
+          },
+          onProgress: (message: string) => progress.report({ message }),
         },
-        onProgress: (message: string) => progress.report({message}),
-      }, progress)
-    })
+        progress,
+      )
+    },
+  )
   for (const [fn, ds] of messages.entries()) {
-    diagnostics.set(vscode.Uri.file(fn), ds);
+    diagnostics.set(vscode.Uri.file(fn), ds)
   }
 }

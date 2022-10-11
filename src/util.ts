@@ -1,12 +1,17 @@
 import * as vscode from 'vscode'
-import {posix as nodePath} from 'path'
+import { posix as nodePath } from 'path'
 
 function getRootDirFallback(file: vscode.Uri): vscode.Uri | undefined {
-  const dir = vscode.workspace.workspaceFolders?.find(f => nodePath.relative(f.uri.path, file.path) !== file.path)
+  const dir = vscode.workspace.workspaceFolders?.find(
+    (f) => nodePath.relative(f.uri.path, file.path) !== file.path,
+  )
   if (dir) {
     return dir.uri
   } else {
-    return vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders[0]?.uri
+    return (
+      vscode.workspace.workspaceFolders &&
+      vscode.workspace.workspaceFolders[0]?.uri
+    )
   }
 }
 
@@ -25,7 +30,7 @@ async function findProjectRoot(
     if (await check(d)) {
       return d
     }
-    d = d.with({path: nodePath.dirname(d.path)})
+    d = d.with({ path: nodePath.dirname(d.path) })
   }
   return null
 }
@@ -35,12 +40,14 @@ async function isDirectory(uri: vscode.Uri): Promise<boolean> {
   return stat.type === vscode.FileType.Directory
 }
 
-export async function getRootDir(input: vscode.Uri): Promise<vscode.Uri | undefined> {
-  const dir = await isDirectory(input)
+export async function getRootDir(
+  input: vscode.Uri,
+): Promise<vscode.Uri | undefined> {
+  const dir = (await isDirectory(input))
     ? input
-    : input.with({path: nodePath.dirname(input.path)})
+    : input.with({ path: nodePath.dirname(input.path) })
   const cabalRoot = await findProjectRoot(dir, dirHasCabalFile)
-  if (!(cabalRoot && await isDirectory(cabalRoot))) {
+  if (!(cabalRoot && (await isDirectory(cabalRoot)))) {
     return getRootDirFallback(input)
   } else {
     return cabalRoot
