@@ -3,22 +3,16 @@ import { delimiter } from 'path'
 import { CabalCommand, TargetParamTypeForBuilder } from '../../types'
 import * as vscode from 'vscode'
 
-import { runProcess, IParams } from './process'
-export { IParams }
+import { runProcess, BuildGenerator } from './process'
 
 export interface CtorOpts {
-  readonly params: IParams
   readonly target: TargetParamTypeForBuilder
   readonly cabalRoot: vscode.Uri
+  readonly cancel: (cb: () => void) => void
 }
 
-export interface ResultType {
-  exitCode: number | null
-  hasError: boolean
-}
-
-export type Builder = Record<CabalCommand, () => Promise<ResultType>> & {
-  runCommand(cmd: CabalCommand): Promise<ResultType>
+export type Builder = Record<CabalCommand, () => BuildGenerator> & {
+  runCommand(cmd: CabalCommand): BuildGenerator
 }
 
 const defaultGlobals = {
@@ -37,27 +31,21 @@ export abstract class BuilderBase implements Builder {
     this.globals = { ...defaultGlobals, ...globals }
   }
 
-  public async runCommand(cmd: CabalCommand): Promise<ResultType> {
+  public runCommand(cmd: CabalCommand): BuildGenerator {
     return this[cmd]()
   }
 
-  public abstract build(): Promise<ResultType>
-  public abstract test(): Promise<ResultType>
-  public abstract bench(): Promise<ResultType>
-  public abstract clean(): Promise<ResultType>
+  public abstract build(): BuildGenerator
+  public abstract test(): BuildGenerator
+  public abstract bench(): BuildGenerator
+  public abstract clean(): BuildGenerator
 
-  protected async runCabal(
-    args: string[],
-    override: Partial<IParams> = {},
-  ): Promise<ResultType> {
+  protected runCabal(args: string[]): BuildGenerator {
     return this.globals.runProcess(
       this.processName,
       args,
       this.getSpawnOpts(),
-      {
-        ...this.opts.params,
-        ...override,
-      },
+      this.opts.cancel,
     )
   }
 

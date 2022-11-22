@@ -4,22 +4,6 @@ import * as path from 'path'
 import { EOL } from 'os'
 import * as vscode from 'vscode'
 
-export type IParams = Omit<IParamsInternal, 'onDone'>
-
-interface IParamsInternal {
-  readonly onMsg?: (
-    raw: string,
-    path?: vscode.Uri,
-    msg?: vscode.Diagnostic,
-  ) => void
-  readonly onProgress?: (progress: string) => void
-  readonly onDone?: (done: {
-    exitCode: number | null
-    hasError: boolean
-  }) => void
-  readonly setCancelAction?: (action: () => void) => void
-}
-
 function unindentMessage(lines: string[]) {
   const minIndent = Math.min(
     ...lines.map((line) => {
@@ -37,7 +21,7 @@ function unindentMessage(lines: string[]) {
 function parseMessage(
   raw: string,
   cwd: vscode.Uri,
-): [vscode.Uri, vscode.Diagnostic] | false {
+): [vscode.Uri, vscode.Diagnostic] | undefined {
   if (raw.trim() !== '') {
     const matchLoc =
       /^(.+):(\d+):(\d+):(?: (\w+):)?[ \t]*(\[[^\]]+\])?[ \t]*\n?([^]*)/
@@ -79,70 +63,117 @@ function parseMessage(
         },
       ]
     } else {
-      return false
+      return
     }
   }
-  return false
+  return
 }
 
-function runBuilderProcess(
-  command: string,
-  args: string[],
-  options: child_process.SpawnOptions,
-  params: IParamsInternal,
-) {
-  const cwd = vscode.Uri.file(options.cwd || '.')
-  // cabal returns failure when there are type errors _or_ when it can't
-  // compile the code at all (i.e., when there are missing dependencies).
-  // Since it's hard to distinguish between these two, we look at the
-  // parsed errors;
-  // this.hasError is set if we find an error/warning, see parseMessage
-  let hasError = false
-  const proc = child_process.spawn(command, args, options)
-  proc.on('error', function (err) {
-    vscode.window.showErrorMessage(err.name, {
-      detail: err.message,
-    })
-  })
+export interface BuildMsg {
+  raw: string
+  path?: vscode.Uri
+  msg?: vscode.Diagnostic
+}
 
-  const buffered = (handleOutput: (lines: string[]) => void) => {
-    let buffer = ''
-    return (data: Buffer) => {
-      const output = data.toString('utf8')
-      const [first, ...tail] = output.split(EOL)
-      // ^ The only place where we get os-specific EOL (CR/CRLF/LF)
-      // in the rest of the code we're using just LF (\n)
-      buffer += first
-      if (tail.length > 0) {
-        // it means there's at least one newline
-        const lines = [buffer, ...tail.slice(0, -1)]
-        buffer = tail.slice(-1)[0]
-        handleOutput(lines)
-      }
+export interface BuildReturn {
+  exitCode: number | null
+  hasError: boolean
+}
+
+export interface BuildProgress {
+  progress: string
+}
+
+export type BuildGenerator = AsyncGenerator<
+  BuildMsg | BuildProgress,
+  BuildReturn
+>
+
+async function* merge<T>(
+  ...gens: Array<AsyncIterator<T>>
+): AsyncGenerator<T, void> {
+  async function next(gen: AsyncIterator<T>) {
+    return { gen, result: await gen.next() }
+  }
+  const sources = new Map(gens.map((gen) => [gen, next(gen)]))
+  while (sources.size) {
+    const winner = await Promise.race(sources.values())
+    if (winner.result.done) {
+      sources.delete(winner.gen)
+      continue
+    }
+    sources.set(winner.gen, next(winner.gen))
+    yield winner.result.value
+  }
+}
+
+const buffered = async function* (gen: AsyncIterable<Buffer>) {
+  let buffer = ''
+  for await (const data of gen) {
+    const output = data.toString('utf8')
+    const [first, ...tail] = output.split(EOL)
+    buffer += first
+    if (tail.length > 0) {
+      // it means there's at least one newline
+      const lines = [buffer, ...tail.slice(0, -1)]
+      buffer = tail.slice(-1)[0]
+      yield lines
     }
   }
+}
 
-  const blockBuffered = (handleOutput: (block: string) => void) => {
-    // Start of a Cabal message
-    const startOfMessage = /\n(?=\S)(?!\d+ \|)/g
-    let buffer: string[] = []
-    proc.on('close', () => handleOutput(buffer.join('\n')))
-    return buffered((lines: string[]) => {
+const blockBuffered = async function* (gen: AsyncIterable<Buffer>) {
+  // Start of a Cabal message
+  const startOfMessage = /\n(?=\S)(?!\d+ \|)/g
+  let buffer: string[] = []
+  try {
+    for await (const lines of buffered(gen)) {
       buffer.push(...lines)
-      // Could iterate over lines here, but this is easier, if not as effective
       const [first, ...tail] = buffer.join('\n').split(startOfMessage)
       if (tail.length > 0) {
         const last = tail.slice(-1)[0]
         buffer = last.split('\n')
         for (const block of [first, ...tail.slice(0, -1)]) {
-          handleOutput(block)
+          yield block
         }
       }
-    })
+    }
+  } finally {
+    yield buffer.join('\n')
   }
+}
 
-  if (params.setCancelAction) {
-    params.setCancelAction(() => {
+export async function* runProcess(
+  command: string,
+  args: string[],
+  options: child_process.SpawnOptions,
+  cancel: (cb: () => void) => void,
+): BuildGenerator {
+  const cwd = vscode.Uri.file(options.cwd?.toString() || '.')
+  // cabal returns failure when there are type errors _or_ when it can't
+  // compile the code at all (i.e., when there are missing dependencies).
+  // Since it's hard to distinguish between these two, we look at the
+  // parsed errors;
+  // this.hasError is set if we find an error/warning
+  let hasError = false
+  let running = true
+  let exitCode = null
+  const proc = child_process.spawn(command, args, options)
+
+  proc.on('error', function (err) {
+    vscode.window.showErrorMessage(err.name, {
+      detail: err.message,
+    })
+    running = false
+  })
+
+  proc.on('exit', (code) => {
+    running = false
+    exitCode = code
+  })
+
+  cancel(() => {
+    if (proc.pid !== undefined && running) {
       try {
         kill(-proc.pid)
       } catch (e) {
@@ -158,51 +189,34 @@ function runBuilderProcess(
       } catch (e) {
         /*noop*/
       }
-    })
-  }
+    }
+  })
 
-  const handleMessage = (msg: string) => {
-    if (params.onProgress) {
+  // Note: blockBuffered used twice because we need separate buffers
+  // for stderr and stdout
+  try {
+    for await (const msg of merge(
+      blockBuffered(proc.stdout!),
+      blockBuffered(proc.stderr!),
+    )) {
       // check progress
       const match = msg.match(/\[\s*([\d]+)\s+of\s+([\d]+)\s*\]/)
       if (match) {
         const progress = match[1]
         const total = match[2]
-        params.onProgress(`${progress} of ${total}`)
+        yield { progress: `${progress} of ${total}` }
       }
+      // check message
+      const res = parseMessage(msg, cwd)
+      hasError = hasError || !!res?.[1]
+      yield { raw: msg, path: res?.[0], msg: res?.[1] }
     }
-    const res = parseMessage(msg, cwd)
-    if (params.onMsg) {
-      if (res) {
-        params.onMsg(msg, res[0], res[1])
-      } else {
-        params.onMsg(msg)
-      }
+  } finally {
+    if (running) {
+      await new Promise<void>((resolve) => {
+        proc.once('exit', () => resolve())
+      })
     }
+    return { hasError, exitCode }
   }
-
-  // Note: blockBuffered used twice because we need separate buffers
-  // for stderr and stdout
-  proc.stdout!.on('data', blockBuffered(handleMessage))
-  proc.stderr!.on('data', blockBuffered(handleMessage))
-
-  proc.on('close', (exitCode) => {
-    if (params.onDone) {
-      params.onDone({ exitCode, hasError: hasError })
-    }
-  })
-}
-
-export async function runProcess(
-  command: string,
-  args: string[],
-  options: child_process.SpawnOptions,
-  pars: IParams,
-) {
-  return await new Promise<{ exitCode: number | null; hasError: boolean }>(
-    (resolve) => {
-      const newPars: IParamsInternal = { ...pars, onDone: resolve }
-      runBuilderProcess(command, args, options, newPars)
-    },
-  )
 }

@@ -5,19 +5,19 @@ export class Builder extends BuilderBase {
   constructor(opts: CtorOpts) {
     super('cabal', opts)
   }
-  public async build() {
+  public async *build() {
     return this.dummyResult
   }
-  public async test() {
+  public async *test() {
     return this.dummyResult
   }
-  public async bench() {
+  public async *bench() {
     return this.dummyResult
   }
-  public async clean() {
+  public async *clean() {
     return this.dummyResult
   }
-  public async deps() {
+  public async *deps() {
     return this.dummyResult
   }
 }

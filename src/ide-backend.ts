@@ -135,13 +135,13 @@ async function getActiveProjectTarget(
   return []
 }
 
-async function cabalBuild(
+async function* cabalBuild(
   ed: vscode.TextEditor,
   context: vscode.ExtensionContext,
   cmd: CabalCommand,
-  params: Builders.IParams,
   progress: vscode.Progress<{ message?: string; increment?: number }>,
-): Promise<void> {
+  cancel: (cb: () => void) => void,
+) {
   try {
     let builderParam: BuilderParamType | undefined =
       context.workspaceState.get('builder')
@@ -231,32 +231,17 @@ async function cabalBuild(
       throw new Error(`Unknown builder '${builderParam}'`)
     }
 
-    const res = await new builder({
-      params,
+    const res = yield* new builder({
       target: newTarget,
       cabalRoot,
+      cancel,
     }).runCommand(cmd)
-    // see CabalProcess for explanation
     // tslint:disable-next-line: no-null-keyword
-    if (res.exitCode === null) {
-      // this means process was killed
-      progress.report({
-        message: 'Build was interrupted',
-      })
-    } else if (res.exitCode !== 0) {
-      if (res.hasError) {
-        progress.report({
-          message: 'There were errors in source files',
-        })
-      } else {
-        progress.report({
-          message: `Builder quit abnormally with exit code ${res.exitCode}`,
-        })
-      }
-    } else {
-      progress.report({
-        message: 'Build was successful',
-      })
+    // null means process was killed.
+    if (res.exitCode !== null && res.exitCode !== 0 && !res.hasError) {
+      vscode.window.showErrorMessage(
+        `Builder quit abnormally with exit code ${res.exitCode}`,
+      )
     }
   } catch (error) {
     console.error(error)
@@ -282,38 +267,26 @@ async function runBuilderCommand(
       title: `${command} in progress`,
     },
     async (progress, token) => {
-      await cabalBuild(
-        ed,
-        context,
-        command,
-        {
-          setCancelAction: (action: () => void) => {
-            token.onCancellationRequested(action)
-          },
-          onMsg: (
-            raw: string,
-            uri?: vscode.Uri,
-            diagnostic?: vscode.Diagnostic,
-          ) => {
-            output.append(raw + '\n')
-            if (uri && diagnostic) {
-              const str = uri.toString()
-              let ds = messages.get(str)
-              if (ds === undefined) {
-                ds = []
-                messages.set(str, ds)
-              }
-              ds.push(diagnostic)
-              diagnostics.set(uri, ds)
+      const it = cabalBuild(ed, context, command, progress, (cb) => {
+        token.onCancellationRequested(cb)
+      })
+      for await (const msg of it) {
+        if ('progress' in msg) {
+          progress.report({ message: msg.progress })
+        } else {
+          output.append(msg.raw + '\n')
+          if (msg.path && msg.msg) {
+            const str = msg.path.fsPath
+            let ds = messages.get(str)
+            if (ds === undefined) {
+              ds = []
+              messages.set(str, ds)
             }
-          },
-          onProgress: (message: string) => progress.report({ message }),
-        },
-        progress,
-      )
+            ds.push(msg.msg)
+            diagnostics.set(msg.path, ds)
+          }
+        }
+      }
     },
   )
-  for (const [fn, ds] of messages.entries()) {
-    diagnostics.set(vscode.Uri.file(fn), ds)
-  }
 }

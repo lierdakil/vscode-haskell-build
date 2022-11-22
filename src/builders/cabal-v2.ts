@@ -1,6 +1,6 @@
-import { CtorOpts, ResultType, IParams } from './base'
+import { CtorOpts } from './base'
 import { CabalBase } from './base/cabal'
-import { runProcess } from './base/process'
+import { BuildGenerator, runProcess } from './base/process'
 import * as vscode from 'vscode'
 
 export class Builder extends CabalBase {
@@ -8,16 +8,16 @@ export class Builder extends CabalBase {
     super(opts)
   }
 
-  public async build() {
+  public build() {
     return this.commonBuild('build', this.component())
   }
-  public async test() {
+  public test() {
     return this.commonBuild('test', [])
   }
-  public async bench(): Promise<ResultType> {
+  public bench() {
     return this.commonBuild('bench', [])
   }
-  public async clean(): Promise<ResultType> {
+  public clean() {
     return this.commonBuild('clean', [])
   }
   // overrides CabalBase.component()
@@ -27,18 +27,25 @@ export class Builder extends CabalBase {
   protected async withPrefix(cmd: string) {
     return super.withPrefix(cmd, 'v2-')
   }
-  private async commonBuild(
+  private async *commonBuild(
     command: 'build' | 'test' | 'bench' | 'install' | 'clean',
     args: string[],
-    override: Partial<IParams> = {},
-  ) {
+  ): BuildGenerator {
     if (
       (await vscode.workspace.fs.readDirectory(this.opts.cabalRoot)).find(
         ([f, t]) => f === 'package.yaml' && t === vscode.FileType.File,
       )
     ) {
-      await runProcess('hpack', [], this.getSpawnOpts(), this.opts.params)
+      const res = yield* runProcess(
+        'hpack',
+        [],
+        this.getSpawnOpts(),
+        this.opts.cancel,
+      )
+      if (res.exitCode !== 0) {
+        return res
+      }
     }
-    return this.runCabal([await this.withPrefix(command), ...args], override)
+    return yield* this.runCabal([await this.withPrefix(command), ...args])
   }
 }

@@ -6,36 +6,46 @@ export class Builder extends BuilderBase {
     super('stack', opts)
   }
 
-  public async build() {
-    return this.runCommon([
-      'build',
-      ...this.component(),
-      ...(vscode.workspace
-        .getConfiguration()
-        .get<string[]>('haskell-build.stack.arguments.build') || []),
-      '--no-run-tests',
-      '--no-run-benchmarks',
-    ])
+  public build() {
+    return this.runBuild(
+      [
+        'build',
+        ...this.component(),
+        ...(vscode.workspace
+          .getConfiguration()
+          .get<string[]>('haskell-build.stack.arguments.build') || []),
+      ],
+      false,
+      false,
+    )
   }
-  public async test() {
-    return this.runBuild([
-      'test',
-      ...this.project(),
-      ...(vscode.workspace
-        .getConfiguration()
-        .get<string[]>('haskell-build.stack.arguments.test') || []),
-    ])
+  public test() {
+    return this.runBuild(
+      [
+        'test',
+        ...this.project(),
+        ...(vscode.workspace
+          .getConfiguration()
+          .get<string[]>('haskell-build.stack.arguments.test') || []),
+      ],
+      true,
+      false,
+    )
   }
-  public async bench() {
-    return this.runBuild([
-      'bench',
-      ...this.project(),
-      ...(vscode.workspace
-        .getConfiguration()
-        .get<string[]>('haskell-build.stack.arguments.bench') || []),
-    ])
+  public bench() {
+    return this.runBuild(
+      [
+        'bench',
+        ...this.project(),
+        ...(vscode.workspace
+          .getConfiguration()
+          .get<string[]>('haskell-build.stack.arguments.bench') || []),
+      ],
+      false,
+      true,
+    )
   }
-  public async clean() {
+  public clean() {
     return this.runCommon([
       'clean',
       ...this.project(),
@@ -44,7 +54,7 @@ export class Builder extends BuilderBase {
         .get<string[]>('haskell-build.stack.arguments.clean') || []),
     ])
   }
-  public async deps() {
+  public deps() {
     return this.runCommon([
       'build',
       '--only-dependencies',
@@ -55,12 +65,12 @@ export class Builder extends BuilderBase {
     ])
   }
 
-  private async runCommon(args: string[], overrides: {} = {}) {
+  private async *runCommon(args: string[]) {
     const globalArgs =
       vscode.workspace
         .getConfiguration()
         .get<string[]>('haskell-build.stack.arguments.global') || []
-    return this.runCabal([...globalArgs, ...args], overrides)
+    return yield* this.runCabal([...globalArgs, ...args])
   }
 
   private fixTarget(comp: string): string {
@@ -91,18 +101,18 @@ export class Builder extends BuilderBase {
     }
   }
 
-  private async runBuild(args: string[]) {
-    const res = await this.runCommon(
-      [...args, '--no-run-tests', '--no-run-benchmarks'],
-      {
-        severity: 'build',
-      },
-    )
-    if (res.exitCode !== 0) {
-      console.error(res.exitCode)
-      return res
-    } else {
-      return this.runCommon(args)
+  private async *runBuild(
+    args: string[],
+    runTests: boolean,
+    runBench: boolean,
+  ) {
+    const args_ = [...args]
+    if (!runTests) {
+      args.push('--no-run-tests')
     }
+    if (!runBench) {
+      args.push('--no-run-benchmarks')
+    }
+    return yield* this.runCommon([...args_])
   }
 }
