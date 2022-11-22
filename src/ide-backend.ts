@@ -17,45 +17,13 @@ const defaultTarget: Readonly<TargetParamType> = {
   dir: undefined,
 }
 
-export function init(context: vscode.ExtensionContext) {
-  const diagnostics = vscode.languages.createDiagnosticCollection('haskell')
-  const output = vscode.window.createOutputChannel('Haskell Build')
-  context.subscriptions.push(
-    diagnostics,
-    output,
-    vscode.commands.registerTextEditorCommand(`haskell-build.build`, (ed) =>
-      runBuilderCommand(ed, output, diagnostics, context, 'build'),
-    ),
-    vscode.commands.registerTextEditorCommand(`haskell-build.test`, (ed) =>
-      runBuilderCommand(ed, output, diagnostics, context, 'test'),
-    ),
-    vscode.commands.registerTextEditorCommand(`haskell-build.clean`, (ed) =>
-      runBuilderCommand(ed, output, diagnostics, context, 'clean'),
-    ),
-    vscode.commands.registerTextEditorCommand(`haskell-build.bench`, (ed) =>
-      runBuilderCommand(ed, output, diagnostics, context, 'bench'),
-    ),
-    vscode.commands.registerCommand(
-      `haskell-build.set-build-target`,
-      async () => {
-        const targets = await targetParamInfo()
-        const target = await vscode.window.showQuickPick(targets)
-        context.workspaceState.update('target', target?.handle)
-      },
-    ),
-    vscode.commands.registerCommand(`haskell-build.set-builder`, async () => {
-      await selectBuilder(context)
-    }),
-  )
-}
-
 const builderParamInfo: ReadonlyArray<vscode.QuickPickItem> = [
   { label: 'cabal-v2' },
   { label: 'stack' },
   { label: 'none' },
 ]
 
-async function selectBuilder(context: vscode.ExtensionContext) {
+export async function selectBuilder(context: vscode.ExtensionContext) {
   const target = await vscode.window.showQuickPick(builderParamInfo)
   if (target) {
     context.workspaceState.update('builder', target?.label)
@@ -102,6 +70,12 @@ async function targetParamInfo(): Promise<
     description: t.type === 'component' ? t.component : undefined,
     handle: t,
   }))
+}
+
+export async function setBuildTarget(context: vscode.ExtensionContext) {
+  const targets = await targetParamInfo()
+  const target = await vscode.window.showQuickPick(targets)
+  context.workspaceState.update('target', target?.handle)
 }
 
 function getActiveProjectPath(editor: vscode.TextEditor): vscode.Uri {
@@ -242,7 +216,7 @@ async function* cabalBuild(
   }
 }
 
-async function runBuilderCommand(
+export async function runBuilderCommand(
   ed: vscode.TextEditor,
   output: vscode.OutputChannel,
   diagnostics: vscode.DiagnosticCollection,
