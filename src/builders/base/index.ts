@@ -1,9 +1,11 @@
 import { delimiter } from 'path'
 
-import { CabalCommand, TargetParamTypeForBuilder } from '../../types'
 import * as vscode from 'vscode'
 
 import { runProcess, BuildGenerator } from './process'
+import { ITarget } from '../../cabal2json'
+
+export type CabalCommand = 'build' | 'clean' | 'test' | 'bench'
 
 export interface CtorOpts {
   readonly target: TargetParamTypeForBuilder
@@ -11,67 +13,57 @@ export interface CtorOpts {
   readonly cancel: (cb: () => void) => void
 }
 
-export type Builder = Record<CabalCommand, () => BuildGenerator> & {
-  runCommand(cmd: CabalCommand): BuildGenerator
+export type Builder = (cmd: CabalCommand, opts: CtorOpts) => BuildGenerator
+
+export interface ProjectDesc {
+  project: string
+  dir?: vscode.Uri
 }
 
-const defaultGlobals = {
-  process,
-  runProcess,
+export type TargetParamType = (
+  | { type: 'component'; target: ITarget; component: string }
+  | { type: 'all' }
+  | { type: 'auto' }
+) &
+  ProjectDesc
+export type TargetParamTypeForBuilder = (
+  | { type: 'component'; component: string }
+  | { type: 'all'; targets: ITarget[] }
+  | { type: 'auto' }
+) &
+  ProjectDesc
+
+export function runCabal(
+  processName: string,
+  args: string[],
+  opts: CtorOpts,
+): BuildGenerator {
+  return runProcess(
+    processName,
+    args,
+    getSpawnOpts(opts.cabalRoot.path),
+    opts.cancel,
+  )
 }
 
-export abstract class BuilderBase implements Builder {
-  private readonly globals: typeof defaultGlobals
-
-  constructor(
-    private processName: string,
-    protected readonly opts: CtorOpts,
-    globals: object = {},
-  ) {
-    this.globals = { ...defaultGlobals, ...globals }
+export function getSpawnOpts(cabalRootPath: string) {
+  // Setup default opts
+  const opts = {
+    cwd: cabalRootPath,
+    detached: true,
+    env: {} as { [key: string]: string | undefined },
   }
 
-  public runCommand(cmd: CabalCommand): BuildGenerator {
-    return this[cmd]()
+  const env = { ...process.env }
+
+  // tslint:disable-next-line: totality-check
+  if (process.platform === 'win32') {
+    const path = collectPathCapitalizations(env)
+    env.PATH = path.join(delimiter)
   }
 
-  public abstract build(): BuildGenerator
-  public abstract test(): BuildGenerator
-  public abstract bench(): BuildGenerator
-  public abstract clean(): BuildGenerator
-
-  protected runCabal(args: string[]): BuildGenerator {
-    return this.globals.runProcess(
-      this.processName,
-      args,
-      this.getSpawnOpts(),
-      this.opts.cancel,
-    )
-  }
-
-  protected additionalEnvSetup(env: typeof process.env): typeof process.env {
-    return env
-  }
-
-  protected getSpawnOpts() {
-    // Setup default opts
-    const opts = {
-      cwd: this.opts.cabalRoot.path,
-      detached: true,
-      env: {} as { [key: string]: string | undefined },
-    }
-
-    const env = { ...this.globals.process.env }
-
-    // tslint:disable-next-line: totality-check
-    if (this.globals.process.platform === 'win32') {
-      const path = collectPathCapitalizations(env)
-      env.PATH = path.join(delimiter)
-    }
-
-    opts.env = this.additionalEnvSetup(env)
-    return opts
-  }
+  opts.env = env
+  return opts
 }
 
 export function collectPathCapitalizations(env: typeof process.env) {

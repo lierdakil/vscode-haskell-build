@@ -1,51 +1,58 @@
-import { CtorOpts } from './base'
-import { CabalBase } from './base/cabal'
+import {
+  CtorOpts,
+  Builder,
+  getSpawnOpts,
+  runCabal,
+  TargetParamTypeForBuilder,
+} from './base'
 import { BuildGenerator, runProcess } from './base/process'
 import * as vscode from 'vscode'
 
-export class Builder extends CabalBase {
-  constructor(opts: CtorOpts) {
-    super(opts)
+export const run: Builder = function (cmd, opts) {
+  switch (cmd) {
+    case 'build':
+      return commonBuild(opts, 'build', component(opts.target))
+    case 'test':
+      return commonBuild(opts, 'test', [])
+    case 'bench':
+      return commonBuild(opts, 'bench', [])
+    case 'clean':
+      return commonBuild(opts, 'clean', [])
   }
+}
 
-  public build() {
-    return this.commonBuild('build', this.component())
+function component(target: TargetParamTypeForBuilder) {
+  switch (target.type) {
+    case 'all':
+      return target.targets.map((x) => `${target.project}:${x.target}`)
+    case 'component':
+      return [`${target.project}:${target.component}`]
+    case 'auto':
+      return []
   }
-  public test() {
-    return this.commonBuild('test', [])
-  }
-  public bench() {
-    return this.commonBuild('bench', [])
-  }
-  public clean() {
-    return this.commonBuild('clean', [])
-  }
-  // overrides CabalBase.component()
-  protected component() {
-    return super.component().map((x) => `${this.opts.target.project}:${x}`)
-  }
-  protected async withPrefix(cmd: string) {
-    return super.withPrefix(cmd, 'v2-')
-  }
-  private async *commonBuild(
-    command: 'build' | 'test' | 'bench' | 'install' | 'clean',
-    args: string[],
-  ): BuildGenerator {
-    if (
-      (await vscode.workspace.fs.readDirectory(this.opts.cabalRoot)).find(
-        ([f, t]) => f === 'package.yaml' && t === vscode.FileType.File,
-      )
-    ) {
-      const res = yield* runProcess(
-        'hpack',
-        [],
-        this.getSpawnOpts(),
-        this.opts.cancel,
-      )
-      if (res.exitCode !== 0) {
-        return res
-      }
+}
+function withPrefix(cmd: string) {
+  return `v2-${cmd}`
+}
+async function* commonBuild(
+  opts: CtorOpts,
+  command: 'build' | 'test' | 'bench' | 'clean',
+  args: string[],
+): BuildGenerator {
+  if (
+    (await vscode.workspace.fs.readDirectory(opts.cabalRoot)).find(
+      ([f, t]) => f === 'package.yaml' && t === vscode.FileType.File,
+    )
+  ) {
+    const res = yield* runProcess(
+      'hpack',
+      [],
+      getSpawnOpts(opts.cabalRoot.path),
+      opts.cancel,
+    )
+    if (res.exitCode !== 0) {
+      return res
     }
-    return yield* this.runCabal([await this.withPrefix(command), ...args])
   }
+  return yield* runCabal('cabal', [withPrefix(command), ...args], opts)
 }

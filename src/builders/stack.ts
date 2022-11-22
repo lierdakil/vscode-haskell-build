@@ -1,118 +1,106 @@
-import { CtorOpts, BuilderBase } from './base'
+import { Builder, CtorOpts, runCabal } from './base'
 import * as vscode from 'vscode'
 
-export class Builder extends BuilderBase {
-  constructor(opts: CtorOpts) {
-    super('stack', opts)
-  }
-
-  public build() {
-    return this.runBuild(
-      [
-        'build',
-        ...this.component(),
+export const run: Builder = function (cmd, opts) {
+  switch (cmd) {
+    case 'build':
+      return runBuild(
+        opts,
+        [
+          'build',
+          ...component(opts),
+          ...(vscode.workspace
+            .getConfiguration()
+            .get<string[]>('haskell-build.stack.arguments.build') || []),
+        ],
+        false,
+        false,
+      )
+    case 'test':
+      return runBuild(
+        opts,
+        [
+          'test',
+          ...project(opts),
+          ...(vscode.workspace
+            .getConfiguration()
+            .get<string[]>('haskell-build.stack.arguments.test') || []),
+        ],
+        true,
+        false,
+      )
+    case 'bench':
+      return runBuild(
+        opts,
+        [
+          'bench',
+          ...project(opts),
+          ...(vscode.workspace
+            .getConfiguration()
+            .get<string[]>('haskell-build.stack.arguments.bench') || []),
+        ],
+        false,
+        true,
+      )
+    case 'clean':
+      return runCommon(opts, [
+        'clean',
+        ...project(opts),
         ...(vscode.workspace
           .getConfiguration()
-          .get<string[]>('haskell-build.stack.arguments.build') || []),
-      ],
-      false,
-      false,
-    )
+          .get<string[]>('haskell-build.stack.arguments.clean') || []),
+      ])
   }
-  public test() {
-    return this.runBuild(
-      [
-        'test',
-        ...this.project(),
-        ...(vscode.workspace
-          .getConfiguration()
-          .get<string[]>('haskell-build.stack.arguments.test') || []),
-      ],
-      true,
-      false,
-    )
-  }
-  public bench() {
-    return this.runBuild(
-      [
-        'bench',
-        ...this.project(),
-        ...(vscode.workspace
-          .getConfiguration()
-          .get<string[]>('haskell-build.stack.arguments.bench') || []),
-      ],
-      false,
-      true,
-    )
-  }
-  public clean() {
-    return this.runCommon([
-      'clean',
-      ...this.project(),
-      ...(vscode.workspace
-        .getConfiguration()
-        .get<string[]>('haskell-build.stack.arguments.clean') || []),
-    ])
-  }
-  public deps() {
-    return this.runCommon([
-      'build',
-      '--only-dependencies',
-      ...this.component(),
-      ...(vscode.workspace
-        .getConfiguration()
-        .get<string[]>('haskell-build.stack.arguments.deps') || []),
-    ])
-  }
+}
 
-  private async *runCommon(args: string[]) {
-    const globalArgs =
-      vscode.workspace
-        .getConfiguration()
-        .get<string[]>('haskell-build.stack.arguments.global') || []
-    return yield* this.runCabal([...globalArgs, ...args])
-  }
+async function* runCommon(opts: CtorOpts, args: string[]) {
+  const globalArgs =
+    vscode.workspace
+      .getConfiguration()
+      .get<string[]>('haskell-build.stack.arguments.global') || []
+  return yield* runCabal('stack', [...globalArgs, ...args], opts)
+}
 
-  private fixTarget(comp: string): string {
-    if (comp.startsWith('lib:')) {
-      comp = 'lib'
-    }
-    return `${this.opts.target.project}:${comp}`
+function fixTarget(comp: string, opts: CtorOpts): string {
+  if (comp.startsWith('lib:')) {
+    comp = 'lib'
   }
+  return `${opts.target.project}:${comp}`
+}
 
-  private project(): string[] {
-    switch (this.opts.target.type) {
-      case 'all':
-      case 'component':
-        return [this.opts.target.project]
-      case 'auto':
-        return []
-    }
+function project(opts: CtorOpts): string[] {
+  switch (opts.target.type) {
+    case 'all':
+    case 'component':
+      return [opts.target.project]
+    case 'auto':
+      return []
   }
+}
 
-  private component(): string[] {
-    switch (this.opts.target.type) {
-      case 'all':
-        return this.opts.target.targets.map((x) => this.fixTarget(x.target))
-      case 'component':
-        return [this.fixTarget(this.opts.target.component)]
-      case 'auto':
-        return []
-    }
+function component(opts: CtorOpts): string[] {
+  switch (opts.target.type) {
+    case 'all':
+      return opts.target.targets.map((x) => fixTarget(x.target, opts))
+    case 'component':
+      return [fixTarget(opts.target.component, opts)]
+    case 'auto':
+      return []
   }
+}
 
-  private async *runBuild(
-    args: string[],
-    runTests: boolean,
-    runBench: boolean,
-  ) {
-    const args_ = [...args]
-    if (!runTests) {
-      args.push('--no-run-tests')
-    }
-    if (!runBench) {
-      args.push('--no-run-benchmarks')
-    }
-    return yield* this.runCommon([...args_])
+async function* runBuild(
+  opts: CtorOpts,
+  args: string[],
+  runTests: boolean,
+  runBench: boolean,
+) {
+  const args_ = [...args]
+  if (!runTests) {
+    args.push('--no-run-tests')
   }
+  if (!runBench) {
+    args.push('--no-run-benchmarks')
+  }
+  return yield* runCommon(opts, args_)
 }

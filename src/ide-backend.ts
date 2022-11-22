@@ -1,16 +1,15 @@
-import * as path from 'path'
 import * as vscode from 'vscode'
-import * as Builders from './builders'
+import Builders from './builders'
 import { posix as nodePath } from 'path'
+import { getRootDir } from './util'
+import { parseDotCabal, getComponentFromFile } from './cabal2json'
 import {
   CabalCommand,
   TargetParamType,
-  BuilderParamType,
-  TBuilders,
   TargetParamTypeForBuilder,
-} from './types'
-import { getRootDir } from './util'
-import { parseDotCabal, getComponentFromFile } from './cabal2json'
+} from './builders'
+
+export type BuilderParamType = 'cabal-v2' | 'stack' | 'none'
 
 const defaultTarget: Readonly<TargetParamType> = {
   project: 'Auto',
@@ -219,23 +218,17 @@ async function* cabalBuild(
         dir: target.dir,
       }
     }
-    const builders: TBuilders = {
-      // eslint-disable-next-line @typescript-eslint/naming-convention
-      'cabal-v2': Builders.CabalV2,
-      stack: Builders.Stack,
-      none: Builders.None,
-    }
-    const builder = builders[builderParam]
+    const builder = Builders[builderParam]
 
     if (builder === undefined) {
       throw new Error(`Unknown builder '${builderParam}'`)
     }
 
-    const res = yield* new builder({
+    const res = yield* builder(cmd, {
       target: newTarget,
       cabalRoot,
       cancel,
-    }).runCommand(cmd)
+    })
     // tslint:disable-next-line: no-null-keyword
     // null means process was killed.
     if (res.exitCode !== null && res.exitCode !== 0 && !res.hasError) {
