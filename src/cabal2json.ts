@@ -45,7 +45,7 @@ async function runCabal2Json<T>(
       cp.stdin!.end()
     } catch (e) {
       vscode.window.showErrorMessage(
-        'Atom-Haskell core error in getComponentFromFile',
+        'Haskell-Build core error in getComponentFromFile',
         {
           detail: (e as Error).message,
         },
