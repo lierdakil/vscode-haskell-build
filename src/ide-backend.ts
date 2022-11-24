@@ -112,7 +112,6 @@ async function* cabalBuild(
   ed: vscode.TextEditor,
   context: vscode.ExtensionContext,
   cmd: CabalCommand,
-  progress: vscode.Progress<{ message?: string; increment?: number }>,
   cancel: (cb: () => void) => void,
 ) {
   try {
@@ -234,7 +233,7 @@ export async function runBuilderCommand(
       title: `${command} in progress`,
     },
     async (progress, token) => {
-      const it = cabalBuild(ed, context, command, progress, (cb) => {
+      const it = cabalBuild(ed, context, command, (cb) => {
         token.onCancellationRequested(cb)
       })
       for await (const msg of it) {
