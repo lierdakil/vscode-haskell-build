@@ -12,6 +12,6 @@ Cabal or stack binary available on the host.
 
 ## Release Notes
 
-### 0.0.1
+### 0.0.4
 
-Initial release. Mostly ported from Atom's ide-haskell-cabal.
+Add support for additional builder arguments.
