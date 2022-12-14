@@ -2,7 +2,6 @@
 	"name": "haskell-build",
 	"displayName": "haskell-build",
 	"description": "Run cabal or stack from vscode, with proper(-ish) error reporting",
-	"preview": true,
 	"extensionKind": [
 		"workspace"
 	],
