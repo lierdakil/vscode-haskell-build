@@ -145,10 +145,16 @@ const blockBuffered = async function* (gen: AsyncIterable<Buffer>) {
 
 export async function* runProcess(
   command: string,
-  args: string[],
+  args: readonly string[],
   options: child_process.SpawnOptions,
   cancel: (cb: () => void) => void,
 ): BuildGenerator {
+  const verbose =
+    vscode.workspace.getConfiguration().get<boolean>('haskell-build.verbose') ||
+    false
+  if (verbose) {
+    yield { raw: `Spawining ${command} ${args}` }
+  }
   const cwd = vscode.Uri.file(options.cwd?.toString() || '.')
   // cabal returns failure when there are type errors _or_ when it can't
   // compile the code at all (i.e., when there are missing dependencies).
@@ -216,6 +222,9 @@ export async function* runProcess(
       await new Promise<void>((resolve) => {
         proc.once('exit', () => resolve())
       })
+    }
+    if (verbose) {
+      yield { raw: `${command} ${args} exited with ${exitCode}` }
     }
     return { hasError, exitCode }
   }

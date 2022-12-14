@@ -1,64 +1,37 @@
-import { Builder, CtorOpts, runCabal } from './base'
+import { Builder, CabalCommand, CtorOpts, runCabal } from './base'
 import * as vscode from 'vscode'
 
 export const run: Builder = function (cmd, opts) {
   switch (cmd) {
     case 'build':
-      return runBuild(
-        opts,
-        [
-          'build',
-          ...component(opts),
-          ...(vscode.workspace
-            .getConfiguration()
-            .get<string[]>('haskell-build.stack.arguments.build') || []),
-        ],
-        false,
-        false,
-      )
+      return runBuild(opts, 'build', component(opts))
     case 'test':
-      return runBuild(
-        opts,
-        [
-          'test',
-          ...project(opts),
-          ...(vscode.workspace
-            .getConfiguration()
-            .get<string[]>('haskell-build.stack.arguments.test') || []),
-        ],
-        true,
-        false,
-      )
+      return runBuild(opts, 'test', project(opts))
     case 'bench':
-      return runBuild(
-        opts,
-        [
-          'bench',
-          ...project(opts),
-          ...(vscode.workspace
-            .getConfiguration()
-            .get<string[]>('haskell-build.stack.arguments.bench') || []),
-        ],
-        false,
-        true,
-      )
+      return runBuild(opts, 'bench', project(opts))
     case 'clean':
-      return runCommon(opts, [
-        'clean',
-        ...project(opts),
-        ...(vscode.workspace
-          .getConfiguration()
-          .get<string[]>('haskell-build.stack.arguments.clean') || []),
-      ])
+      return runCommon(opts, 'clean', project(opts))
   }
 }
 
-async function* runCommon(opts: CtorOpts, args: string[]) {
+async function* runCommon(
+  opts: CtorOpts,
+  cmd: CabalCommand,
+  args: readonly string[],
+) {
   const globalArgs =
     vscode.workspace
       .getConfiguration()
       .get<string[]>('haskell-build.stack.arguments.global') || []
-  return yield* runCabal('stack', [...globalArgs, ...args], opts)
+  const cmdArgs =
+    vscode.workspace
+      .getConfiguration()
+      .get<string[]>(`haskell-build.stack.arguments.${cmd}`) || []
+  return yield* runCabal(
+    'stack',
+    [...globalArgs, cmd, ...args, ...cmdArgs],
+    opts,
+  )
 }
 
 function fixTarget(comp: string, opts: CtorOpts): string {
@@ -68,7 +41,7 @@ function fixTarget(comp: string, opts: CtorOpts): string {
   return `${opts.target.project}:${comp}`
 }
 
-function project(opts: CtorOpts): string[] {
+function project(opts: CtorOpts): readonly Readonly<string>[] {
   switch (opts.target.type) {
     case 'all':
     case 'component':
@@ -78,7 +51,7 @@ function project(opts: CtorOpts): string[] {
   }
 }
 
-function component(opts: CtorOpts): string[] {
+function component(opts: CtorOpts): readonly string[] {
   switch (opts.target.type) {
     case 'all':
       return opts.target.targets.map((x) => fixTarget(x.target, opts))
@@ -91,16 +64,15 @@ function component(opts: CtorOpts): string[] {
 
 async function* runBuild(
   opts: CtorOpts,
-  args: string[],
-  runTests: boolean,
-  runBench: boolean,
+  cmd: Exclude<CabalCommand, 'clean'>,
+  args: readonly string[],
 ) {
   const args_ = [...args]
-  if (!runTests) {
-    args.push('--no-run-tests')
+  if (cmd !== 'test') {
+    args_.push('--no-run-tests')
   }
-  if (!runBench) {
-    args.push('--no-run-benchmarks')
+  if (cmd !== 'bench') {
+    args_.push('--no-run-benchmarks')
   }
-  return yield* runCommon(opts, args_)
+  return yield* runCommon(opts, cmd, args_)
 }

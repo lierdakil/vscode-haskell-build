@@ -35,7 +35,7 @@ export type TargetParamTypeForBuilder = (
 
 export function runCabal(
   processName: string,
-  args: string[],
+  args: readonly string[],
   opts: CtorOpts,
 ): BuildGenerator {
   return runProcess(

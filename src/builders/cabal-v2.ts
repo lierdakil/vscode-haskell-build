@@ -4,6 +4,7 @@ import {
   getSpawnOpts,
   runCabal,
   TargetParamTypeForBuilder,
+  CabalCommand,
 } from './base'
 import { BuildGenerator, runProcess } from './base/process'
 import * as vscode from 'vscode'
@@ -21,7 +22,7 @@ export const run: Builder = function (cmd, opts) {
   }
 }
 
-function component(target: TargetParamTypeForBuilder) {
+function component(target: TargetParamTypeForBuilder): readonly string[] {
   switch (target.type) {
     case 'all':
       return target.targets.map((x) => `${target.project}:${x.target}`)
@@ -31,28 +32,49 @@ function component(target: TargetParamTypeForBuilder) {
       return []
   }
 }
-function withPrefix(cmd: string) {
-  return `v2-${cmd}`
-}
+
 async function* commonBuild(
   opts: CtorOpts,
-  command: 'build' | 'test' | 'bench' | 'clean',
-  args: string[],
+  command: CabalCommand,
+  args: readonly string[],
 ): BuildGenerator {
-  if (
-    (await vscode.workspace.fs.readDirectory(opts.cabalRoot)).find(
-      ([f, t]) => f === 'package.yaml' && t === vscode.FileType.File,
-    )
-  ) {
-    const res = yield* runProcess(
-      'hpack',
-      [],
-      getSpawnOpts(opts.cabalRoot.path),
-      opts.cancel,
-    )
-    if (res.exitCode !== 0) {
-      return res
-    }
+  const res = yield* tryRunHPack(opts)
+  if (res && res.exitCode !== 0) {
+    return res
   }
-  return yield* runCabal('cabal', [withPrefix(command), ...args], opts)
+  const globalArgs =
+    vscode.workspace
+      .getConfiguration()
+      .get<string[]>('haskell-build.cabal.arguments.global') || []
+  const cmdArgs =
+    vscode.workspace
+      .getConfiguration()
+      .get<string[]>(`haskell-build.cabal.arguments.${command}`) || []
+  return yield* runCabal(
+    'cabal',
+    [...globalArgs, `v2-${command}`, ...args, ...cmdArgs],
+    opts,
+  )
+}
+
+async function* tryRunHPack(opts: CtorOpts) {
+  const runHPack =
+    vscode.workspace
+      .getConfiguration()
+      .get<boolean>('haskell-build.cabal.runHPack') || true
+  if (!runHPack) {
+    return
+  }
+  const hasPackageYaml = (
+    await vscode.workspace.fs.readDirectory(opts.cabalRoot)
+  ).find(([f, t]) => f === 'package.yaml' && t === vscode.FileType.File)
+  if (!hasPackageYaml) {
+    return
+  }
+  return yield* runProcess(
+    'hpack',
+    [],
+    getSpawnOpts(opts.cabalRoot.path),
+    opts.cancel,
+  )
 }

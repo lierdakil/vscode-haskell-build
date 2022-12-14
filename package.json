@@ -48,6 +48,115 @@
 				"command": "haskell-build.set-builder",
 				"title": "Haskell Build: Set builder"
 			}
+		],
+		"configuration": [
+			{
+				"title": "Cabal",
+				"properties": {
+					"haskell-build.cabal.runHPack": {
+						"type": "boolean",
+						"default": true,
+						"description": "Try to run hpack before cabal if the package root has `package.yaml`",
+						"order": 0
+					},
+
+					"haskell-build.cabal.arguments.global": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						},
+						"default": [],
+						"description": "Global arguments passed to every cabal invocation",
+						"order": 1
+					},
+					"haskell-build.cabal.arguments.build": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						},
+						"default": [],
+						"description": "Arguments passed to cabal build invocation",
+						"order": 2
+					},
+					"haskell-build.cabal.arguments.test": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						},
+						"default": [],
+						"description": "Arguments passed to cabal test invocation",
+						"order": 3
+					},
+					"haskell-build.cabal.arguments.bench": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						},
+						"default": [],
+						"description": "Arguments passed to cabal bench invocation",
+						"order": 4
+					},
+					"haskell-build.cabal.arguments.clean": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						},
+						"default": [],
+						"description": "Arguments passed to cabal clean invocation",
+						"order": 5
+					}
+				}
+			},
+			{
+				"title": "Stack",
+				"properties": {
+					"haskell-build.stack.arguments.global": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						},
+						"default": [],
+						"description": "Global arguments passed to every stack invocation",
+						"order": 0
+					},
+					"haskell-build.stack.arguments.build": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						},
+						"default": [],
+						"description": "Arguments passed to stack build invocation",
+						"order": 1
+					},
+					"haskell-build.stack.arguments.test": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						},
+						"default": [],
+						"description": "Arguments passed to stack test invocation",
+						"order": 2
+					},
+					"haskell-build.stack.arguments.bench": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						},
+						"default": [],
+						"description": "Arguments passed to stack bench invocation",
+						"order": 3
+					},
+					"haskell-build.stack.arguments.clean": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						},
+						"default": [],
+						"description": "Arguments passed to stack clean invocation",
+						"order": 4
+					}
+				}
+			}
 		]
 	},
 	"scripts": {
