@@ -61,7 +61,7 @@ async function* tryRunHPack(opts: CtorOpts) {
   const runHPack =
     vscode.workspace
       .getConfiguration()
-      .get<boolean>('haskell-build.cabal.runHPack') || true
+      .get<boolean>('haskell-build.cabal.runHPack') ?? true
   if (!runHPack) {
     return
   }
