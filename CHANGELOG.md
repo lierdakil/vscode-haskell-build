@@ -1,4 +1,7 @@
-# Change Log
+## 0.0.5
+
+- Fix haskell-build.cabal.runHPack option
+- Remove preview tag
 
 ## 0.0.4
 
