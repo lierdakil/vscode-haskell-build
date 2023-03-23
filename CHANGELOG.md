@@ -1,3 +1,7 @@
+## 0.0.6
+
+-   Better support for GHC 9.6 output format
+
 ## 0.0.5
 
 - Fix haskell-build.cabal.runHPack option
