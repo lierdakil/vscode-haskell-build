@@ -24,8 +24,8 @@ function parseMessage(
 ): [vscode.Uri, vscode.Diagnostic] | undefined {
   if (raw.trim() !== '') {
     const matchLoc =
-      /^(.+):(\d+):(\d+):(?: (\w+):)?[ \t]*(\[[^\]]+\])?[ \t]*\n?([^]*)/
-    const matched = raw.trimRight().match(matchLoc)
+      /^(.+):(\d+):(\d+):(?: (\w+):)?[ \t]*((?:\[[^\]]+\]\s*)*)[ \t]*\n?([^]*)/
+    const matched = raw.trimEnd().match(matchLoc)
     if (matched) {
       const [file, line, col, rawTyp, context, msg] = matched.slice(1)
       const typ =
