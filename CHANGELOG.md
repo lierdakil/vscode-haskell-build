@@ -1,3 +1,7 @@
+## 0.0.9
+
+-   Bundle extension
+
 ## 0.0.8
 
 - Fix distribution error (didn't include wasm file)
