@@ -1,6 +1,11 @@
+## 0.0.7
+
+- Switch to running cabal2json via wasm
+- Support for cabal 3.10 via bumping cabal2json
+
 ## 0.0.6
 
--   Better support for GHC 9.6 output format
+- Better support for GHC 9.6 output format
 
 ## 0.0.5
 
