@@ -1,3 +1,7 @@
+## 0.0.10
+
+-   Include worker.js into dist
+
 ## 0.0.9
 
 -   Bundle extension
