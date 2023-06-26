@@ -1,193 +1,198 @@
 {
-	"name": "haskell-build",
-	"displayName": "haskell-build",
-	"description": "Run cabal or stack from vscode, with proper(-ish) error reporting",
-	"extensionKind": [
-		"workspace"
-	],
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/lierdakil/vscode-haskell-build"
-	},
-	"publisher": "lierdakil",
-	"version": "0.0.8",
-	"engines": {
-		"vscode": "^1.67.0"
-	},
-	"categories": [
-		"Other"
-	],
-	"activationEvents": [
-		"onLanguage:haskell"
-	],
-	"main": "./out/extension.js",
-	"contributes": {
-		"commands": [
-			{
-				"command": "haskell-build.build",
-				"title": "Haskell Build: Build"
-			},
-			{
-				"command": "haskell-build.test",
-				"title": "Haskell Build: Test"
-			},
-			{
-				"command": "haskell-build.clean",
-				"title": "Haskell Build: Clean"
-			},
-			{
-				"command": "haskell-build.bench",
-				"title": "Haskell Build: Bench"
-			},
-			{
-				"command": "haskell-build.set-build-target",
-				"title": "Haskell Build: Set build target"
-			},
-			{
-				"command": "haskell-build.set-builder",
-				"title": "Haskell Build: Set builder"
-			}
-		],
-		"configuration": [
-			{
-				"title": "Cabal",
-				"properties": {
-					"haskell-build.cabal.runHPack": {
-						"type": "boolean",
-						"default": true,
-						"description": "Try to run hpack before cabal if the package root has `package.yaml`",
-						"order": 0
-					},
-					"haskell-build.cabal.arguments.global": {
-						"type": "array",
-						"items": {
-							"type": "string"
-						},
-						"default": [],
-						"description": "Global arguments passed to every cabal invocation",
-						"order": 1
-					},
-					"haskell-build.cabal.arguments.build": {
-						"type": "array",
-						"items": {
-							"type": "string"
-						},
-						"default": [],
-						"description": "Arguments passed to cabal build invocation",
-						"order": 2
-					},
-					"haskell-build.cabal.arguments.test": {
-						"type": "array",
-						"items": {
-							"type": "string"
-						},
-						"default": [],
-						"description": "Arguments passed to cabal test invocation",
-						"order": 3
-					},
-					"haskell-build.cabal.arguments.bench": {
-						"type": "array",
-						"items": {
-							"type": "string"
-						},
-						"default": [],
-						"description": "Arguments passed to cabal bench invocation",
-						"order": 4
-					},
-					"haskell-build.cabal.arguments.clean": {
-						"type": "array",
-						"items": {
-							"type": "string"
-						},
-						"default": [],
-						"description": "Arguments passed to cabal clean invocation",
-						"order": 5
-					}
-				}
-			},
-			{
-				"title": "Stack",
-				"properties": {
-					"haskell-build.stack.arguments.global": {
-						"type": "array",
-						"items": {
-							"type": "string"
-						},
-						"default": [],
-						"description": "Global arguments passed to every stack invocation",
-						"order": 0
-					},
-					"haskell-build.stack.arguments.build": {
-						"type": "array",
-						"items": {
-							"type": "string"
-						},
-						"default": [],
-						"description": "Arguments passed to stack build invocation",
-						"order": 1
-					},
-					"haskell-build.stack.arguments.test": {
-						"type": "array",
-						"items": {
-							"type": "string"
-						},
-						"default": [],
-						"description": "Arguments passed to stack test invocation",
-						"order": 2
-					},
-					"haskell-build.stack.arguments.bench": {
-						"type": "array",
-						"items": {
-							"type": "string"
-						},
-						"default": [],
-						"description": "Arguments passed to stack bench invocation",
-						"order": 3
-					},
-					"haskell-build.stack.arguments.clean": {
-						"type": "array",
-						"items": {
-							"type": "string"
-						},
-						"default": [],
-						"description": "Arguments passed to stack clean invocation",
-						"order": 4
-					}
-				}
-			}
-		]
-	},
-	"scripts": {
-		"vscode:prepublish": "npm run compile",
-		"compile": "tsc -p ./",
-		"watch": "tsc -watch -p ./",
-		"pretest": "npm run compile && npm run lint",
-		"lint": "eslint src --ext ts",
-		"test": "node ./out/test/runTest.js",
-		"prettier": "prettier -w src/"
-	},
-	"devDependencies": {
-		"@types/glob": "^7.2.0",
-		"@types/mocha": "^9.1.1",
-		"@types/node": "16",
-		"@types/vscode": "^1.67.0",
-		"@typescript-eslint/eslint-plugin": "^5.21.0",
-		"@typescript-eslint/parser": "^5.21.0",
-		"@vscode/test-electron": "^2.1.3",
-		"eslint": "^8.14.0",
-		"glob": "^8.0.1",
-		"mocha": "^9.2.2",
-		"prettier": "^2.7.1",
-		"typescript": "^4.6.4"
-	},
-	"__metadata": {
-		"id": "c9735bfb-e3bb-439e-8d67-09aafe4a0e5a",
-		"publisherDisplayName": "lierdakil",
-		"publisherId": "70a25767-eb44-4939-9052-6aaf21f6c7b5",
-		"isPreReleaseVersion": false
-	},
-	"dependencies": {
-		"@vscode/sync-api-service": "^0.8.1",
-		"@vscode/wasm-wasi": "^0.8.1"
-	}
+  "name": "haskell-build",
+  "displayName": "haskell-build",
+  "description": "Run cabal or stack from vscode, with proper(-ish) error reporting",
+  "extensionKind": [
+    "workspace"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lierdakil/vscode-haskell-build"
+  },
+  "publisher": "lierdakil",
+  "version": "0.0.8",
+  "engines": {
+    "vscode": "^1.67.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:haskell"
+  ],
+  "main": "./dist/main.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "haskell-build.build",
+        "title": "Haskell Build: Build"
+      },
+      {
+        "command": "haskell-build.test",
+        "title": "Haskell Build: Test"
+      },
+      {
+        "command": "haskell-build.clean",
+        "title": "Haskell Build: Clean"
+      },
+      {
+        "command": "haskell-build.bench",
+        "title": "Haskell Build: Bench"
+      },
+      {
+        "command": "haskell-build.set-build-target",
+        "title": "Haskell Build: Set build target"
+      },
+      {
+        "command": "haskell-build.set-builder",
+        "title": "Haskell Build: Set builder"
+      }
+    ],
+    "configuration": [
+      {
+        "title": "Cabal",
+        "properties": {
+          "haskell-build.cabal.runHPack": {
+            "type": "boolean",
+            "default": true,
+            "description": "Try to run hpack before cabal if the package root has `package.yaml`",
+            "order": 0
+          },
+          "haskell-build.cabal.arguments.global": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [],
+            "description": "Global arguments passed to every cabal invocation",
+            "order": 1
+          },
+          "haskell-build.cabal.arguments.build": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [],
+            "description": "Arguments passed to cabal build invocation",
+            "order": 2
+          },
+          "haskell-build.cabal.arguments.test": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [],
+            "description": "Arguments passed to cabal test invocation",
+            "order": 3
+          },
+          "haskell-build.cabal.arguments.bench": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [],
+            "description": "Arguments passed to cabal bench invocation",
+            "order": 4
+          },
+          "haskell-build.cabal.arguments.clean": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [],
+            "description": "Arguments passed to cabal clean invocation",
+            "order": 5
+          }
+        }
+      },
+      {
+        "title": "Stack",
+        "properties": {
+          "haskell-build.stack.arguments.global": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [],
+            "description": "Global arguments passed to every stack invocation",
+            "order": 0
+          },
+          "haskell-build.stack.arguments.build": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [],
+            "description": "Arguments passed to stack build invocation",
+            "order": 1
+          },
+          "haskell-build.stack.arguments.test": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [],
+            "description": "Arguments passed to stack test invocation",
+            "order": 2
+          },
+          "haskell-build.stack.arguments.bench": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [],
+            "description": "Arguments passed to stack bench invocation",
+            "order": 3
+          },
+          "haskell-build.stack.arguments.clean": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [],
+            "description": "Arguments passed to stack clean invocation",
+            "order": 4
+          }
+        }
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run esbuild-base -- --minify",
+    "esbuild-base": "esbuild ./src/extension.ts --bundle --outfile=dist/main.js --external:vscode --format=cjs --platform=node",
+    "esbuild": "npm run esbuild-base -- --sourcemap",
+    "esbuild-watch": "npm run esbuild-base -- --sourcemap --watch",
+    "test-compile": "tsc -p ./",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js",
+    "prettier": "prettier -w src/"
+  },
+  "devDependencies": {
+    "@types/glob": "^7.2.0",
+    "@types/mocha": "^9.1.1",
+    "@types/node": "16",
+    "@types/vscode": "^1.67.0",
+    "@typescript-eslint/eslint-plugin": "^5.21.0",
+    "@typescript-eslint/parser": "^5.21.0",
+    "@vscode/test-electron": "^2.1.3",
+    "esbuild": "^0.18.9",
+    "eslint": "^8.14.0",
+    "glob": "^8.0.1",
+    "mocha": "^9.2.2",
+    "prettier": "^2.7.1",
+    "typescript": "^4.6.4"
+  },
+  "__metadata": {
+    "id": "c9735bfb-e3bb-439e-8d67-09aafe4a0e5a",
+    "publisherDisplayName": "lierdakil",
+    "publisherId": "70a25767-eb44-4939-9052-6aaf21f6c7b5",
+    "isPreReleaseVersion": false
+  },
+  "dependencies": {
+    "@vscode/sync-api-service": "^0.8.1",
+    "@vscode/wasm-wasi": "^0.8.1"
+  }
 }
