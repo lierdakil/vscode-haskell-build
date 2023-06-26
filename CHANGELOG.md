@@ -1,3 +1,7 @@
+## 0.0.8
+
+- Fix distribution error (didn't include wasm file)
+
 ## 0.0.7
 
 - Switch to running cabal2json via wasm
