@@ -10,7 +10,7 @@
     "url": "https://github.com/lierdakil/vscode-haskell-build"
   },
   "publisher": "lierdakil",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "engines": {
     "vscode": "^1.67.0"
   },
