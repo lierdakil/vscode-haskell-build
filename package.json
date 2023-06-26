@@ -185,5 +185,9 @@
 		"publisherDisplayName": "lierdakil",
 		"publisherId": "70a25767-eb44-4939-9052-6aaf21f6c7b5",
 		"isPreReleaseVersion": false
+	},
+	"dependencies": {
+		"@vscode/sync-api-service": "^0.8.1",
+		"@vscode/wasm-wasi": "^0.8.1"
 	}
 }

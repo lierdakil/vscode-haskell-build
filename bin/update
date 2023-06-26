@@ -1,7 +1,0 @@
-#!/bin/bash
-
-cd "$(dirname "$0")"
-rm cabal2json.min.js || true
-curl -s https://api.github.com/repos/atom-haskell/cabal2json/releases/latest \
-  | jq -r '.assets[0].browser_download_url' \
-  | wget -i -
